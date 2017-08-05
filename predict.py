@@ -32,7 +32,7 @@ def evaluate_model(model):
 
 
 def predict(pred_model, data_path, img_shape, model_shape, affine_shape):
-    test_dir = os.path.join(data_path, 'test')
+    test_dir = os.path.join(data_path, 'test', 'image')
     test_files = os.listdir(test_dir)
 
     if '.DS_Store' in test_files:
@@ -41,30 +41,59 @@ def predict(pred_model, data_path, img_shape, model_shape, affine_shape):
     img_stack, roi_stack = get_stack(data_path, img_shape)
 
     for i in test_files:
-        name = i[9:14]
+        name = i[0:5]
 
         img = np.load(os.path.join(test_dir, i))
         #img has shape: (256,256,40)
         affine_img, dx, dy = affine_registration(affine_shape, img_stack, roi_stack, img)
         #prediction img now has shape: (32,32,40)
+
+        aff_path = os.path.join(data_path, 'test', 'aff', name)
+
+        np.save(aff_path, affine_img)
+        print('ndarray saved -- name: {}\tshape: {}\tpath: {}'.format(name, resized_affine_img.shape, aff_path))
+
         resized_affine_img = zero_pad(affine_img, shape=model_shape)
+
         #prediction img now has shape: (32,32,48) == input model shape
         #zero-pad will add xy zero matrices in both the positive and negative z-direction
+
+        resized_affine_img = np.reshape(resized_affine_img, (1,) + (1,) + resized_affine_img.shape)
+
         pred_roi  = pred_model.predict(resized_affine_img)
-        #prediction roi now has shape: (32,32,48)
+
+        print('checkpoint 1:\t{}'.format(pred_roi.shape))
+
+        pred_roi = np.squeeze(pred_roi)
+
+        print('checkpoint 2:\t{}'.format(pred_roi.shape))
+
+        pred_roi = process_probability_map(pred_roi)
+
         resized_pred_roi = resize_roi(pred_roi, dx, dy, img_shape)
+
+        print('checkpoint 3:\t{}'.format(resized_pred_roi.shape))
         #prediction roi now has shape: (256,256,48)
+
         resized_pred_roi = resized_pred_roi[:, :, 4:44]
         #prediction roi now has shape: (256,256,40) == img shape
 
-        pred_save_path = os.path.join(test_dir, 'pred', name)
+        pred_save_path = os.path.join(data_path, 'test', 'pred', name)
 
         border_sum = sum_border(resized_pred_roi)
 
-        if border_sum == 0:
-            np.save(pred_save_path, resized_pred_roi)
-            print('ndarray saved -- name: {}\tshape: {}\tpath: {}'.format(name, resized_pred_roi.shape, pred_save_path))
-        else:
-            print('affine failure -- name: {}\tborder sum: {}'.format(name, border_sum))
+        np.save(pred_save_path, resized_pred_roi)
+        print('ndarray saved -- name: {}\tshape: {}\tpath: {}'.format(name, resized_pred_roi.shape, pred_save_path))
+
+
+def process_probability_map(pred_roi):
+    if np.mean(pred_roi) > 1e-05:
+        pred_roi = pred_roi > np.mean(pred_roi)
+
+    if np.mean(pred_roi) < 1e-05:
+        pred_roi = pred_roi > 0
+
+    return pred_roi
+
 
 

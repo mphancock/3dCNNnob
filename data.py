@@ -138,11 +138,10 @@ def resize_roi(pred_roi, dx, dy, img_shape):
     return resized_roi
 
 
-def save_image(image, roi, directory, name):
+def save_image(image, directory, name):
     file_extension = '.jpg'
     for i in range(image.shape[2]):
         imsave(os.path.join(directory, 'image', '{}image{}{}'.format(name, i, file_extension)), image[:, :, i])
-        imsave(os.path.join(directory, 'roi', '{}roi{}{}'.format(name, i, file_extension)), roi[:, :, i])
 
 
 

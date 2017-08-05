@@ -10,10 +10,13 @@ from data import zero_pad
 from data import save_image
 from data import affine_registration
 from data import get_stack
+from data import cut_window
 
 from generator import get_generator
 
 from data import resize_roi
+
+from augment import elastic_transform
 
 from save_data import save_data
 
@@ -24,6 +27,9 @@ from utilities import sum_border
 from random import shuffle
 
 from clear_directories import clear_data_directories
+
+from utilities import roi_overlay
+
 
 
 def generator_test():
@@ -193,10 +199,87 @@ def data_test2():
         print('name: {}\tshape:{}'.format(i[9:14], img.shape))
 
 
+def save_preview():
+    path = '/Users/Matthew/Downloads/aff'
+    save_path = '/Users/Matthew/Documents/Research/test/preview'
+    files = os.listdir(path)
+
+    if '.DS_Store' in files:
+        files.remove('.DS_Store')
+
+    print(files)
+
+    path = os.path.join(path, '20070.npy')
+
+    aff = np.load(path)
+    for i in range(aff.shape[2]):
+        name = 'aff{}.jpg'.format(i)
+        name = os.path.join(save_path, name)
+        imsave(name, aff[:, :, i])
+
+
+    # for i in files:
+    #     file_path = os.path.join(path, i)
+    #     pred = np.load(file_path)
+    #     for j in range(pred.shape[2]):
+    #         imsave(os.path.join(save_path, 'aff{}slice{}.jpg'.format(i, j)), pred[:, :, j])
+
+
+def elastic_save():
+    path = '/Users/Matthew/Documents/Research/3dData/test/image/10021.npy'
+    roi_path = '/Users/Matthew/Documents/Research/3dData/test/roi/10021.npy'
+
+    img = np.load(path)
+    roi = np.load(roi_path)
+
+    rgb = roi_overlay(img, roi, img.shape)
+    save_path = '/Users/Matthew/Documents/Research/test/preview'
+
+    for i in range(img.shape[2]):
+        name = 'overlay{}.jpg'.format(i)
+        name = os.path.join(save_path, name)
+
+        imsave(name, rgb[i, :, :, :])
+
+    img, roi = elastic_transform(img, roi)
+    rgb_elastic = roi_overlay(img, roi, img.shape)
+
+    for i in range(img.shape[2]):
+        name = 'elastic_overlay{}.jpg'.format(i)
+        name = os.path.join(save_path, name)
+
+        imsave(name, rgb_elastic[i, :, :, :])
+
+
+def window_save():
+    path = '/Users/Matthew/Documents/Research/3dData/test/image/10021.npy'
+    roi_path = '/Users/Matthew/Documents/Research/3dData/test/roi/10021.npy'
+
+    img = np.load(path)
+    roi = np.load(roi_path)
+
+    img, roi = elastic_transform(img, roi)
+
+    img, roi = cut_window((48,48,40), img, roi)
+
+    rgb = roi_overlay(img, roi, img.shape)
+
+    save_path = '/Users/Matthew/Documents/Research/test/preview'
+    for i in range(img.shape[2]):
+        name = 'rgb{}.jpg'.format(i)
+        roi_name = 'roi{}.jpg'.format(i)
+
+        name = os.path.join(save_path, name)
+        roi_name = os.path.join(save_path, roi_name)
+
+        imsave(name, rgb[i, :, :, :])
+        imsave(roi_name, roi[:, :, i])
+
+
 
 
 if __name__ == '__main__':
-    affine_test()
+    save_preview()
     print('testing complete')
 
 

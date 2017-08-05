@@ -1,5 +1,7 @@
 import os
 
+import dill
+
 from scipy.misc import imsave
 
 from train import train
@@ -20,6 +22,7 @@ from model import unet_model_3d
             -->image: 
             -->roi: 
             -->pred:
+            -->aff: 
         -->train: 
             -->image:
             -->roi: 
@@ -58,7 +61,15 @@ def segment(type):
                           downsize_filters_factor=1,
                           initial_learning_rate=.00001)
 
-    train(data_path, train_model, input_shape, batch_size=4, epoch_count=20000)
+    history = train(data_path, train_model, input_shape, batch_size=4, epoch_count=4000)
+
+    history_file = open('history_val_dice.txt', 'w')
+    for i in history.history['val_dice_coef']:
+        history_file.write('{}\n'.format(i))
+
+    history_file_2 = open('history_train_dice.txt', 'w')
+    for i in history.history['dice_coef']:
+        history_file_2.write('{}\n'.format(i))
 
     pred_model = unet_model_3d(model_input,
                           downsize_filters_factor=1,
@@ -79,7 +90,6 @@ def segment(type):
 
     if '.DS_Store' in test_file_list:
         test_file_list.remove('.DS_Store')
-
 
     print('roi prediction complete')
 

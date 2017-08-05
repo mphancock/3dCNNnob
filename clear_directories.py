@@ -21,7 +21,9 @@ def clear_data_directories(base_path):
 
         if i == 'test':
             pred_path = os.path.join(base_path, i, 'pred')
+            aff_path = os.path.join(base_path, i, 'aff')
             clear_directory(pred_path)
+            clear_directory(aff_path)
 
 
 if __name__ == '__main__':

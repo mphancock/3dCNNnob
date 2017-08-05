@@ -25,3 +25,31 @@ def sum_border(roi):
     return sum
 
 
+def roi_overlay(image, roi, shape):
+    rgb = np.ndarray([shape[2], shape[0], shape[1], 3])
+
+    img_t = image.T
+    roi_t = roi.T
+
+    rgb[:, :, :, 0] = img_t
+
+    for i in range(rgb.shape[0]):
+        for j in range(rgb.shape[1]):
+            for k in range(rgb.shape[2]):
+                if roi_t[i, j, k] > .5:
+                    rgb[i, j, k, 0] = 1
+
+    rgb[:, :, :, 1] = img_t
+    rgb[:, :, :, 2] = img_t
+
+    return rgb
+
+
+
+
+
+
+
+
+
+

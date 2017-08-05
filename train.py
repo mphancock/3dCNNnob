@@ -31,7 +31,7 @@ def train(data_path, model, input_shape, batch_size=1, epoch_count=10000):
 
     callbacks = get_callbacks()
 
-    model.fit_generator(generator=train_generator,
+    history = model.fit_generator(generator=train_generator,
                         steps_per_epoch=train_steps_per_epoch,
                         epochs=epoch_count,
                         verbose=1,
@@ -39,6 +39,7 @@ def train(data_path, model, input_shape, batch_size=1, epoch_count=10000):
                         validation_data=val_generator,
                         validation_steps=val_steps_per_epoch)
 
+    return history
 
 def get_callbacks():
     model_checkpoint = ModelCheckpoint('unet.hdf5', monitor='loss', save_best_only=True)
