@@ -51,7 +51,7 @@ def predict(pred_model, data_path, img_shape, model_shape, affine_shape):
         aff_path = os.path.join(data_path, 'test', 'aff', name)
 
         np.save(aff_path, affine_img)
-        print('ndarray saved -- name: {}\tshape: {}\tpath: {}'.format(name, resized_affine_img.shape, aff_path))
+        print('ndarray saved -- name: {}\tshape: {}\tpath: {}'.format(name, affine_img.shape, aff_path))
 
         resized_affine_img = zero_pad(affine_img, shape=model_shape)
 

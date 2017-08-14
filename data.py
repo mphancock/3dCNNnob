@@ -77,6 +77,27 @@ def cut_window(shape, img, roi):
     return c_img, c_roi
 
 
+def cut_window2d(shape, img, roi):
+    x_com, y_com = com(roi)
+
+    x_com = round(x_com)
+    y_com = round(y_com)
+
+    dx = int(x_com - int(shape[0]/2))
+    dy = int(y_com - int(shape[1]/2))
+
+    if dx < 0:
+        dx = 0
+
+    if dy < 0:
+        dy = 0
+
+    c_img = img[dx:dx+shape[0], dy:dy+shape[1]]
+    c_roi = roi[dx:dx+shape[0], dy:dy+shape[1]]
+
+    return dx, dy, c_img, c_roi
+
+
 def zero_pad(image, shape):
 
     delta1 = int(math.fabs(image.shape[0] - shape[0]))

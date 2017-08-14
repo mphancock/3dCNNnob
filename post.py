@@ -3,6 +3,7 @@ import numpy as np
 import os
 
 from scipy.misc import imsave
+from subprocess import call
 
 from predict import process_probability_map
 
@@ -56,24 +57,45 @@ def clear_save_directories(save_dir):
         clear_directory(dir)
 
 
-if __name__ == '__main__':
-    data_path = '/Users/Matthew/Documents/Research/3dData/'
+def save_pred(save_img, save_path, file_num):
+    for i in range(save_img.shape[2]):
+        file_name = '{}slice{}.jpg'.format(file_num, i)
+        file_path = os.path.join(save_path, file_name)
+        imsave(file_path, save_img[:, :, i])
 
+
+def gen_predictions(thresh):
+    data_path = '/Users/Matthew/Documents/Research/3dData/'
     mat_path = '/Users/Matthew/Documents/Research/corrMTRdata'
 
     clear_data_directories(data_path)
 
-    save_data(mat_path, data_path)
+    cloud_dir = 'hancocmp@login.accre.vanderbilt.edu:/scratch/hancocmp/3dData'
+    local_dir = '/Users/Matthew/Documents/Research/'
+    call(['scp', '-r', cloud_dir, local_dir])
 
+    save_data(mat_path, data_path)
 
     pred_dir = '/Users/Matthew/Downloads/pred'
     pred_files = os.listdir(pred_dir)
 
+    aff_dir = '/Users/Matthew/Downloads/aff'
+    aff_files = os.listdir(aff_dir)
+
     if '.DS_Store' in pred_files:
         pred_files.remove('.DS_Store')
 
+    if '.DS_Store' in aff_files:
+        aff_files.remove('.DS_Store')
+
     save_dir = '/Users/Matthew/Documents/Research/preview'
     clear_save_directories(save_dir)
+
+    ave_dc = 0
+    ave_successful_dc = 0
+    successful_reg = []
+    ave_unsuccessful_dc = 0
+    unsuccesful_reg = []
 
     for file in pred_files:
         file_path = os.path.join(pred_dir, file)
@@ -85,39 +107,51 @@ if __name__ == '__main__':
         pred_roi = process_probability_map(pred_roi)
         img, roi = get_data(data_path, file)
 
-        for i in range(pred_roi.shape[2]):
-            file_name = '{}slice{}.jpg'.format(file_num, i)
-            file_name = os.path.join(save_dir, 'roi_pred', file_name)
-            imsave(file_name, pred_roi[:, :, i])
-
-        for i in range(img.shape[2]):
-            img_file_name = '{}slice{}.jpg'.format(file_num, i)
-            img_file_name = os.path.join(save_dir, 'image', img_file_name)
-            imsave(img_file_name, img[:, :, i])
-
-        for i in range(roi.shape[2]):
-            roi_file_name = '{}slice{}.jpg'.format(file_num, i)
-            roi_file_name = os.path.join(save_dir, 'roi', roi_file_name)
-            imsave(roi_file_name, roi[:, :, i])
+        save_pred(pred_roi, os.path.join(save_dir, 'roi_pred'), file_num)
+        save_pred(img, os.path.join(save_dir, 'image'), file_num)
+        save_pred(roi, os.path.join(save_dir, 'roi'), file_num)
 
         rgb_true = roi_overlay(img, roi, img.shape)
         rgb_pred = roi_overlay(img, pred_roi, img.shape)
 
-        for i in range(rgb_true.shape[0]):
-            true_file_name = '{}slice{}.jpg'.format(file_num, i)
-            true_file_name = os.path.join(save_dir, 'true_overlay', true_file_name)
-            imsave(true_file_name, rgb_true[i, :, :, :])
-
-        for i in range(rgb_pred.shape[0]):
-            pred_file_name = '{}slice{}.jpg'.format(file_num, i)
-            pred_file_name = os.path.join(save_dir, 'pred_overlay', pred_file_name)
-            imsave(pred_file_name, rgb_pred[i, :, :, :])
+        save_pred(rgb_true, os.path.join(save_dir, 'true_overlay'), file_num)
+        save_pred(rgb_pred, os.path.join(save_dir, 'pred_overlay'), file_num)
 
         dc = dice_coeff(roi, pred_roi)
-        print('{} prediction has been saved'.format(file_num))
-        print('{} image has been saved'.format(file_num))
+        ave_dc += dc
+
+        if dc > thresh:
+            ave_successful_dc += dc
+            successful_reg.append(file_num)
+        else:
+            ave_unsuccessful_dc += dc
+            unsuccesful_reg.append(file_num)
+
         print('{} pred roi dice coefficient:\t{}'.format(file_num, dc))
 
+    for file in aff_files:
+        file_path = os.path.join(aff_dir, file)
+        aff = np.load(file_path)
+        file_num = file[0:5]
+
+        save_pred(aff, os.path.join(save_dir, 'affine'), file_num)
+
+    ave_dc = ave_dc / len(pred_files)
+    ave_successful_dc = ave_successful_dc / len(successful_reg)
+    ave_unsuccessful_dc = ave_unsuccessful_dc / len(unsuccesful_reg)
+
+    print('overall average dice coefficient: {}\n'.format(ave_dc))
+    print('successful registration: {}'.format(successful_reg))
+    print('successful registration average dice coefficient: {}'.format(ave_successful_dc))
+    print('unsuccesful registration: {}'.format(unsuccesful_reg))
+    print('unsuccesful registration average dice coefficient: {}'.format(ave_unsuccessful_dc))
+
     print('all files saved')
+
+
+if __name__ == '__main__':
+    tresh = .1
+    gen_predictions(tresh)
+    print('fin')
 
 

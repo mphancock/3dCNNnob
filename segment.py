@@ -1,7 +1,5 @@
 import os
 
-import dill
-
 from scipy.misc import imsave
 
 from train import train
@@ -51,17 +49,17 @@ def segment(type):
     print('all data saved')
 
     img_shape = (256,256,40)
-    affine_shape = (48,48,40)
-    input_shape = (48,48,48)
+    affine_shape = (64,64,40)
+    input_shape = (64,64,48)
 
     #input fed into fist layer: (None, 1, 48, 48, 64)
-    model_input = (1,48,48,48)
+    model_input = (1,) + input_shape
 
     train_model = unet_model_3d(model_input,
                           downsize_filters_factor=1,
                           initial_learning_rate=.00001)
 
-    history = train(data_path, train_model, input_shape, batch_size=4, epoch_count=4000)
+    history = train(data_path, train_model, input_shape, batch_size=5, epoch_count=7500)
 
     history_file = open('history_val_dice.txt', 'w')
     for i in history.history['val_dice_coef']:

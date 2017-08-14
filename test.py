@@ -1,9 +1,13 @@
 import os
 import numpy as np
 import scipy.io as sio
+import sys
+import matplotlib.pyplot as plt
 
 from scipy.misc import imsave
 from matplotlib.image import imread
+
+from subprocess import call
 
 from data import normalize_image
 from data import zero_pad
@@ -11,6 +15,7 @@ from data import save_image
 from data import affine_registration
 from data import get_stack
 from data import cut_window
+from data import cut_window2d
 
 from generator import get_generator
 
@@ -29,6 +34,8 @@ from random import shuffle
 from clear_directories import clear_data_directories
 
 from utilities import roi_overlay
+
+from post import get_data
 
 
 
@@ -276,12 +283,131 @@ def window_save():
         imsave(roi_name, roi[:, :, i])
 
 
+def analyze_img():
+    np.set_printoptions(linewidth=250, precision=2)
+
+    name = '10011.npy'
+
+    data_path = '/Users/Matthew/Documents/Research/3dData'
+    img, roi = get_data(data_path, name)
+
+    shape = (16,16)
+
+    slice = 0
+    img_slice = img[:, :, slice]
+    roi_slice = roi[:, :, slice]
+
+    save_dir = '/Users/Matthew/Documents/Research/test/preview'
+    img_save_path = os.path.join(save_dir, 'orgimgslice{}.jpg'.format(slice))
+    roi_save_path = os.path.join(save_dir, 'orgroislice{}.jpg'.format(slice))
+
+    pred_dir = '/Users/Matthew/Downloads/pred'
+
+    pred_path = os.path.join(pred_dir, name)
+    pred_roi = np.load(pred_path)
+
+    pred_roi_slice = pred_roi[:, :, slice]
+    print(pred_roi_slice.shape)
+    pred_roi_save_path = os.path.join(save_dir, 'predroislice{}.jpg'.format(slice))
+    imsave(pred_roi_save_path, pred_roi_slice)
+
+    imsave(img_save_path, img_slice)
+    imsave(roi_save_path, roi_slice)
+
+    dx, dy, img_slice, roi_slice = cut_window2d(shape, img_slice, roi_slice)
+
+    # for i in range(img.shape[2]):
+
+    new_arr = np.ndarray(img_slice.shape)
+    new_arr.fill(0)
+
+    for i in range(img_slice.shape[0]):
+        for j in range(img_slice.shape[1]):
+            if roi_slice[i,j] == 1:
+                new_arr[i,j] = img_slice[i,j]
+
+    new_arr_2 = np.ndarray(img_slice.shape)
+    new_arr_2.fill(0)
+
+    new_arr_3 = np.ndarray(img_slice.shape)
+    new_arr_3.fill(0)
+
+    for i in range(img_slice.shape[0]):
+        for j in range(img_slice.shape[1]):
+            if roi_slice[i,j] == 1:
+                new_arr_2[i,j] = img_slice[i,j]
+            elif 1 < j < roi_slice.shape[1]-1 and roi_slice[i,j-1] == 1 and roi_slice[i,j+1] == 1:
+                new_arr_2[i,j] = img_slice[i,j]
+
+            else:
+                new_arr_3[i,j] = img_slice[i,j]
+
+    new_arr_4 = np.ndarray(img_slice.shape)
+    new_arr_4.fill(0)
+
+    new_arr_5 = np.ndarray(img_slice.shape)
+    new_arr_5.fill(0)
+
+    pred_roi_slice = pred_roi_slice[dx:dx+shape[0], dy:dy+shape[1]]
+    for i in range(img_slice.shape[0]):
+        for j in range(img_slice.shape[1]):
+            if pred_roi_slice[i,j] == 1:
+                new_arr_4[i,j] = img_slice[i,j]
+            else:
+                new_arr_5[i,j] = img_slice[i,j]
+
+
+
+    print(np.array2string(new_arr))
+    print('')
+    # print(np.array2string(new_arr_2))
+    # print('')
+    print(np.array2string(new_arr_4))
+    print('')
+
+    print(np.array2string(new_arr_3))
+    print('')
+    print(np.array2string(new_arr_5))
+    print('')
+
+    # print(np.array2string(img_slice))
+
+    img_save_path = os.path.join(save_dir, 'cutimgslice{}.jpg'.format(slice))
+    roi_save_path = os.path.join(save_dir, 'cutroislice{}.jpg'.format(slice))
+
+    imsave(img_save_path, img_slice)
+    imsave(roi_save_path, roi_slice)
+
+
+def graph_test():
+    plt.figure(1)
+    plt.subplot(211)
+    plt.plot([1,2,3])
+    plt.subplot(211)
+    plt.plot([4,5,6], 'r--')
+    plt.show()
+
+
+def aff_test():
+    dir = '/Users/Matthew/Downloads/aff'
+    files = os.listdir(dir)
+    if '.DS_Store' in files:
+        files.remove('.DS_Store')
+
+    for i in files:
+        file_path = os.path.join(dir, i)
+        aff = np.load(file_path)
+        print('{} shape: {}'.format(i, aff.shape))
+
+
+def subprocess_test():
+    cloud_dir = 'hancocmp@login.accre.vanderbilt.edu:/scratch/hancocmp/3dData'
+    local_dir = '/Users/Matthew/Documents/Research/'
+    call(['scp', '-r', cloud_dir, local_dir])
 
 
 if __name__ == '__main__':
-    save_preview()
-    print('testing complete')
-
+    subprocess_test()
 
 
 

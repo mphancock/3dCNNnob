@@ -5,7 +5,6 @@ from keras.callbacks import ModelCheckpoint
 
 from generator import get_generator
 from utilities import get_count
-from multi_gpu import make_parallel
 
 
 gpu_count = 4
