@@ -1,59 +1,14 @@
 import numpy as np
-import scipy.io as sio
-
-from random import shuffle
+import os
+import math
 
 from scipy.misc import imsave
-
 from sklearn.metrics import normalized_mutual_info_score as nmi
-
-from scipy.ndimage.measurements import center_of_mass as com
-
-import os
-
-import math
+from scipy.ndimage.measurements import center_of_mass as com\
 
 from utilities import get_count
 
 split_pct = .8
-
-
-def affine_registration(shape, img_stack, roi_stack, img):
-    max_nmi = 0
-    max_nmi_index = 0
-
-    for i in range(img_stack.shape[0]):
-        temp_img = img_stack[i, :, :, :]
-
-        nmi_score = nmi(temp_img.reshape(-1), img.reshape(-1))
-
-        if nmi_score > max_nmi:
-            max_nmi = nmi_score
-            max_nmi_index = i
-
-    roi_base = roi_stack[max_nmi_index, :, :, :]
-
-    x_com, y_com, z_com = com(roi_base)
-
-    rx_com = int(round(x_com))
-    ry_com = int(round(y_com))
-
-    dx = rx_com - int(shape[0]/2)
-    dy = ry_com - int(shape[0]/2)
-
-    if dx < 0:
-        dx = 0
-
-    if dy < 0:
-        dy = 0
-
-    dx = int(dx)
-    dy = int(dy)
-
-    c_img = img[dx:dx+shape[0], dy:dy+shape[1], :]
-    # c_roi = roi[dx:dx+shape[0], dy:dy+shape[1]]
-
-    return c_img, dx, dy
 
 
 def cut_window(shape, img, roi):
@@ -74,28 +29,7 @@ def cut_window(shape, img, roi):
     c_img = img[dx:dx+shape[0], dy:dy+shape[1], :]
     c_roi = roi[dx:dx+shape[0], dy:dy+shape[1], :]
 
-    return c_img, c_roi
-
-
-def cut_window2d(shape, img, roi):
-    x_com, y_com = com(roi)
-
-    x_com = round(x_com)
-    y_com = round(y_com)
-
-    dx = int(x_com - int(shape[0]/2))
-    dy = int(y_com - int(shape[1]/2))
-
-    if dx < 0:
-        dx = 0
-
-    if dy < 0:
-        dy = 0
-
-    c_img = img[dx:dx+shape[0], dy:dy+shape[1]]
-    c_roi = roi[dx:dx+shape[0], dy:dy+shape[1]]
-
-    return dx, dy, c_img, c_roi
+    return c_img, c_roi, dx, dy
 
 
 def zero_pad(image, shape):
@@ -165,7 +99,22 @@ def save_image(image, directory, name):
         imsave(os.path.join(directory, 'image', '{}image{}{}'.format(name, i, file_extension)), image[:, :, i])
 
 
+def cut_window_2d(shape, img, roi):
+    x_com, y_com = com(roi)
 
+    x_com = round(x_com)
+    y_com = round(y_com)
 
+    dx = int(x_com - int(shape[0]/2))
+    dy = int(y_com - int(shape[1]/2))
 
+    if dx < 0:
+        dx = 0
 
+    if dy < 0:
+        dy = 0
+
+    c_img = img[dx:dx+shape[0], dy:dy+shape[1]]
+    c_roi = roi[dx:dx+shape[0], dy:dy+shape[1]]
+
+    return c_img, c_roi

@@ -1,4 +1,5 @@
 import os
+from subprocess import call
 
 def clear_directory(path):
     for file in os.listdir(path):
@@ -9,22 +10,14 @@ def clear_directory(path):
             print(e)
 
 
-def clear_data_directories(base_path):
-    directories = ['test', 'val', 'train']
-
-    for i in directories:
-        image_path = os.path.join(base_path, i, 'image')
-        roi_path = os.path.join(base_path, i, 'roi')
-
-        clear_directory(image_path)
-        clear_directory(roi_path)
-
-        if i == 'test':
-            pred_path = os.path.join(base_path, i, 'pred')
-            aff_path = os.path.join(base_path, i, 'aff')
-            clear_directory(pred_path)
-            clear_directory(aff_path)
+def clear_directories(base_path, dir_list):
+    for dir in dir_list:
+        dir_path = os.path.join(base_path, dir)
+        clear_directory(dir_path)
+        print('The following data path is clear: {}'.format(dir_path))
 
 
-if __name__ == '__main__':
-    clear_data_directories('/Users/Matthew/Documents/Research/3dData')
+def clear_dir(dir):
+    call(['find', '{}'.format(dir), '-type', 'f', '-name', '*', '-exec', 'rm', '--', '{}', '+'])
+
+

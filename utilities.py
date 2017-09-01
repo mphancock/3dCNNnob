@@ -1,6 +1,11 @@
 import os
-
 import numpy as np
+
+from sklearn.metrics import normalized_mutual_info_score as nmi
+
+from scipy.ndimage.measurements import center_of_mass as com
+
+from subprocess import call
 
 def get_count(path):
     files = os.listdir(path)
@@ -10,19 +15,46 @@ def get_count(path):
     return len(files)
 
 
-def sum_border(roi):
-    sum = 0
-    for i in range(roi.shape[2]):
-        slice = roi[:, :, i]
-        for j in range(roi.shape[0]):
-            row = slice[j, :]
-            if j == 0 or j == (roi.shape[0]-1):
-                sum += np.sum(row)
-            else:
-                for k in range(roi.shape[1]):
-                    if k == 0 or k == (roi.shape[1]-1):
-                        sum += roi[j, k, i]
-    return sum
+def clear_dir(dir):
+    call(['find', '{}'.format(dir), '-type', 'f', '-name', '*', '-exec', 'rm', '--', '{}', '+'])
+    print('{} is clear'.format(dir))
+
+
+def affine_registration(shape, img_stack, roi_stack, img):
+    max_nmi = 0
+    max_nmi_index = 0
+
+    for i in range(img_stack.shape[0]):
+        temp_img = img_stack[i, :, :, :]
+
+        nmi_score = nmi(temp_img.reshape(-1), img.reshape(-1))
+
+        if nmi_score > max_nmi:
+            max_nmi = nmi_score
+            max_nmi_index = i
+
+    roi_base = roi_stack[max_nmi_index, :, :, :]
+
+    x_com, y_com, z_com = com(roi_base)
+
+    rx_com = int(round(x_com))
+    ry_com = int(round(y_com))
+
+    dx = rx_com - int(shape[0]/2)
+    dy = ry_com - int(shape[0]/2)
+
+    if dx < 0:
+        dx = 0
+
+    if dy < 0:
+        dy = 0
+
+    dx = int(dx)
+    dy = int(dy)
+
+    c_img = img[dx:dx+shape[0], dy:dy+shape[1], :]
+
+    return c_img, dx, dy
 
 
 def roi_overlay(image, roi, shape):
@@ -43,6 +75,7 @@ def roi_overlay(image, roi, shape):
     rgb[:, :, :, 2] = img_t
 
     return rgb
+
 
 
 
