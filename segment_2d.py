@@ -13,7 +13,7 @@ def segment_2d(shared):
 
     init_lr = shared['init_lr']*10
 
-    trial_path = os.path.join(shared['base'], 'trial{}'.format(shared['trial']))
+    trial_path = os.path.join(shared['base'], 'trial', 'trial{}'.format(shared['trial']))
     data_path = os.path.join(trial_path, '3dData')
     net_path = os.path.join(trial_path, net)
 

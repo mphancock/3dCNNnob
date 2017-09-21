@@ -72,6 +72,54 @@ def graph():
 
     plt.show()
 
+def graph_net(trial_path, net, net_num, epoch_count):
+    train_file = 'history_train.txt'
+    val_file = 'history_val.txt'
+
+    net_dir = os.path.join(trial_path, net)
+    train_path = os.path.join(net_dir, train_file)
+    val_path = os.path.join(net_dir, val_file)
+
+    with open(train_path) as f:
+        train_list = f.read().splitlines()
+
+    with open(val_path) as f:
+        val_list = f.read().splitlines()
+
+    subplot = net_num + 220
+
+    x_axis = list()
+
+    for i in range(epoch_count):
+        x_axis.append(i)
+
+    plt.subplot(subplot)
+    plt.plot(x_axis, train_list, 'b--')
+    # plt.subplot(subplot)
+    plt.plot(x_axis, val_list, 'r--')
+    plt.title(net)
+
+
+
+
+def graph_trial(trial_path):
+    plt.figure(1)
+
+    net_num = 1
+    net_list = ['cnn3d', 'cnn2d', 'cnnbn', 'cnnwo']
+    for net in net_list:
+        graph_net(trial_path=trial_path,
+                  net=net,
+                  net_num=net_num,
+                  epoch_count=5000)
+
+        net_num += 1
+    plt.show()
 
 if __name__ == '__main__':
-    graph()
+    r_path = '/Users/Matthew/Documents/Research/'
+    for i in range(1,4):
+        trial_path = os.path.join(r_path, 'trial', 'trial{}'.format(i))
+        graph_trial(trial_path)
+        print('Trial {} graphing complete'.format(i))
+

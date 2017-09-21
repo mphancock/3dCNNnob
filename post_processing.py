@@ -1,6 +1,7 @@
 import numpy as np
 import os
 
+import scipy.io as sio
 from scipy.misc import imsave
 from subprocess import call
 
@@ -8,7 +9,8 @@ from predict import process_probability_map
 
 from utilities import clear_dir, roi_overlay
 
-from cost_functions import dice_coeff
+from data import normalize_image
+
 
 # def get_data(data_path, file):
 #     directories = ['train', 'test', 'val']
@@ -34,24 +36,59 @@ def check_pred(pred_roi, num):
             print('{} has non zero/one array element'.format(num))
 
 
-def save_pred(save_img, dir_path, file_num):
+def dice_coeff(r1, r2):
+    true_f = r1.flatten()
+    pred_f = r2.flatten()
+    intersect = np.sum(true_f*pred_f)
+    return (2 * intersect) / (np.sum(true_f) + np.sum(pred_f))
+
+
+def save_3d(save_img, dir_path, file_num):
     for i in range(save_img.shape[2]):
         file_name = '{}slice{}.jpg'.format(file_num, i)
         file_path = os.path.join(dir_path, file_name)
         imsave(file_path, save_img[:, :, i])
 
 
-def save_from_cloud(trial):
-    cloud_dir = 'hancocmp@login.accre.vanderbilt.edu:/scratch/hancocmp/trial{}/'.format(trial)
+def save_from_cloud():
+    cloud_dir = 'hancocmp@login.accre.vanderbilt.edu:/scratch/hancocmp/trial/'
     local_dir = '/Users/Matthew/Documents/Research/'
     call(['scp', '-r', cloud_dir, local_dir])
 
 
-def gen_net_prediction(base_path, net):
-    net_path = os.path.join(base_path, net)
-    data_path = os.path.join(base_path, '3dData')
+def mask_processing(img, num, mat_path):
+    mat_files = os.listdir(mat_path)
 
-    clear_dir(net_path)
+    if '.DS_Store' in mat_files:
+        mat_files.remove('.DS_Store')
+
+    file = ''
+    for i in mat_files:
+        if num in i:
+            file = i
+            break
+
+    if file == '':
+        raise Exception('Could not find corresponding mat file to: '.format(num))
+
+    mat_dict = sio.loadmat(os.path.join(mat_path, file))
+    mask = mat_dict['bgMASK']
+
+    mask = normalize_image(mask)
+    if(mask.shape != (256, 256, 40)):
+        print('\t\t{} incorrect mask shape: {}'.format(num, mask.shape))
+        return img
+
+    mask_img = np.multiply(img, mask)
+
+    return mask_img
+
+
+def gen_net_prediction(trial_path, net):
+    mat_dir = 'corrMTRdata'
+    mat_path = os.path.join('/Users/Matthew/Documents/Research', mat_dir)
+    net_path = os.path.join(trial_path, net)
+    data_path = os.path.join(trial_path, '3dData')
 
     pred_dir = os.path.join(net_path, 'pred')
     pred_files = os.listdir(pred_dir)
@@ -60,7 +97,10 @@ def gen_net_prediction(base_path, net):
         pred_files.remove('.DS_Store')
 
     prev_path = os.path.join(net_path, 'preview')
-    ave_dc = 0
+    succ_ave_dc = 0
+    over_ave_dc = 0
+
+    fail = 0
 
     for file in pred_files:
         pred_roi = np.load(os.path.join(pred_dir, file))
@@ -69,48 +109,58 @@ def gen_net_prediction(base_path, net):
         pred_roi = process_probability_map(pred_roi)
         check_pred(pred_roi, file_num)
 
-        img = np.load(os.path.join(data_path, 'test', file))
-        roi = np.load(os.path.join(data_path, 'roi', file))
+        pred_roi = mask_processing(img=pred_roi, num=file_num, mat_path=mat_path)
 
-        save_pred(pred_roi, os.path.join(prev_path, 'roi_pred'), file_num)
-        save_pred(img, os.path.join(prev_path, 'image'), file_num)
+        img = np.load(os.path.join(data_path, 'test', 'image', file))
+        roi = np.load(os.path.join(data_path, 'test', 'roi', file))
 
-        rgb_true = roi_overlay(img, roi, img.shape)
-        rgb_pred = roi_overlay(img, pred_roi, img.shape)
+        save_3d(pred_roi, os.path.join(prev_path, 'roi_pred'), file_num)
+        save_3d(img, os.path.join(prev_path, 'image'), file_num)
 
-        save_pred(rgb_true, os.path.join(prev_path, 'true_overlay'), file_num)
-        save_pred(rgb_pred, os.path.join(prev_path, 'pred_overlay'), file_num)
+        rgb_true = roi_overlay(img, roi)
+        rgb_pred = roi_overlay(img, pred_roi)
+
+        save_3d(rgb_true, os.path.join(prev_path, 'true_overlay'), file_num)
+        save_3d(rgb_pred, os.path.join(prev_path, 'pred_overlay'), file_num)
 
         dc = dice_coeff(roi, pred_roi)
-        ave_dc += dc
+        print('\t\t{} pred roi dice coefficient:\t{}'.format(file_num, dc))
+        if dc > .5:
+            succ_ave_dc += dc
+        else:
+            fail += 1
+            print('\t\t\tSegmentation failed')
+        over_ave_dc += dc
 
-        print('{} pred roi dice coefficient:\t{}'.format(file_num, dc))
 
-    ave_dc = ave_dc / len(pred_files)
+    succ_ave_dc = succ_ave_dc / (len(pred_files)-fail)
+    over_ave_dc = over_ave_dc / (len(pred_files))
 
-    return ave_dc
+    return succ_ave_dc, over_ave_dc
 
 
-def gen_predictions(base_path, trial):
-    trial_path = os.path.join(base_path, 'trial{}'.format(trial))
-    data_path = os.path.join(trial_path, '3dData')
+def gen_trial_predictions(base_path, trial):
+    print('Trial {} Predictions: '.format(trial))
+    trial_path = os.path.join(base_path, 'trial', 'trial{}'.format(trial))
 
-    clear_dir(data_path)
+    for net in ['cnn2d', 'cnn3d', 'cnnbn', 'cnnwo']:
+        print('\tNet: {}'.format(net))
+        net_dc = gen_net_prediction(trial_path, net)
+        print('\t{} average succesfull predictive dice coefficient:\t{}\n'.format(net, net_dc[0]))
+        print('\t{} average overall predictive dice coefficient:\t{}\n'.format(net, net_dc[1]))
 
-    save_from_cloud(trial)
-
-    for net in ['2d', '3d', '3dbn', '3dvan']:
-        print('{}'.format(net))
-        net_dc = gen_net_prediction(base_path, net)
-        print('{} overall average predictive dice coefficient:\t{}\n\n'.format(net, net_dc))
-
-    print('Post-processing complete')
+    print('Trial {} Post-processing complete\n'.format(trial))
 
 
 if __name__ == '__main__':
     base_path = '/Users/Matthew/Documents/Research/'
-    trial = '1'
-    gen_predictions(base_path, trial)
+
+    save_from_cloud()
+
+    for i in range(1,4):
+        trial = i
+        gen_trial_predictions(base_path, trial)
+
     print('fin')
 
 

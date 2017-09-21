@@ -4,7 +4,7 @@ import math
 
 from scipy.misc import imsave
 from sklearn.metrics import normalized_mutual_info_score as nmi
-from scipy.ndimage.measurements import center_of_mass as com\
+from scipy.ndimage.measurements import center_of_mass as com
 
 from utilities import get_count
 

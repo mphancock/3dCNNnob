@@ -12,7 +12,7 @@ def segment_3d(shared):
     net = 'cnn3d'
     data_type = '3d'
 
-    trial_path = os.path.join(shared['base'], 'trial{}'.format(shared['trial']))
+    trial_path = os.path.join(shared['base'], 'trial', 'trial{}'.format(shared['trial']))
     data_path = os.path.join(trial_path, '3dData')
     net_path = os.path.join(trial_path, net)
 

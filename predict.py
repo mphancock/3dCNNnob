@@ -53,9 +53,10 @@ def predict_3d(pred_model, img, roi, input_shape):
 
     output_pred_roi_cut = np.squeeze(output_multi_dim)
 
-    pred_roi_cut = output_pred_roi_cut[:, :, 4:44]
+    # pred_roi_cut = output_pred_roi_cut[:, :, 4:44]
+    # output is now (48,48,40) -> no need to cut z-axis
 
-    processed_roi_cut = process_probability_map(pred_roi_cut)
+    processed_roi_cut = process_probability_map(output_pred_roi_cut)
 
     return resize_roi(processed_roi_cut, dx, dy, img.shape)
 

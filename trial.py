@@ -3,8 +3,8 @@ import os
 from subprocess import call
 
 from split_data import split_data
-from clear_directories import clear_dir
 
+from utilities import clear_dir
 
 def set_params():
     shared = {}
@@ -48,7 +48,7 @@ def run_trial(shared):
     print('3d batch normalizing segmentation and non linear augmentation has begun')
 
     call(['sbatch', 'cnnwo.slurm'])
-    print(['3d segmentation without linear/non linear augmentation has begun'])
+    print('3d segmentation without linear/non linear augmentation has begun')
 
 
 if __name__ == '__main__':

@@ -57,10 +57,10 @@ def affine_registration(shape, img_stack, roi_stack, img):
     return c_img, dx, dy
 
 
-def roi_overlay(image, roi, shape):
-    rgb = np.ndarray([shape[2], shape[0], shape[1], 3])
+def roi_overlay(img, roi):
+    rgb = np.ndarray([img.shape[2], img.shape[0], img.shape[1], 3])
 
-    img_t = image.T
+    img_t = img.T
     roi_t = roi.T
 
     rgb[:, :, :, 0] = img_t
