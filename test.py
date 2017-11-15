@@ -18,6 +18,8 @@ from generator import get_generator
 
 from post_processing import save_from_cloud
 
+from post_processing import save_3d
+
 
 def generator_test():
     save_dir = '/Users/Matthew/Documents/Research/test/preview'
@@ -199,10 +201,22 @@ def rater_comparison():
         imsave(os.path.join(preview_dir, 'rater2slice{}.jpg'.format(i)), roi_2[:, :, i])
 
 
+def preview_test():
+    prev_dir = '/Users/Matthew/Documents/Research/test/preview'
+    clear_dir(prev_dir)
+
+    pred_dir = '/Users/Matthew/Documents/Research/trial/trial1/cnnbn/pred/'
+    file_path = os.path.join(pred_dir, '10040.npy')
+
+    pred = np.load(file_path)
+
+    save_3d(pred, prev_dir, '10040')
+
+
 
 
 if __name__ == '__main__':
-    graph_test()
+    preview_test()
     print('testing finished')
 
 

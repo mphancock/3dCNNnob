@@ -32,34 +32,74 @@ def evaluate_model(model):
     return scores
 
 
-def process_probability_map(pred_roi):
-    if np.mean(pred_roi) > 1e-05:
-        pred_roi = pred_roi > np.mean(pred_roi)
+# def process_probability_map(pred_roi):
+#     if np.mean(pred_roi) > 1e-05:
+#         pred_roi = pred_roi > np.mean(pred_roi)
+#
+#     if np.mean(pred_roi) < 1e-05:
+#         pred_roi = pred_roi > 0
+#
+#     return pred_roi
 
-    if np.mean(pred_roi) < 1e-05:
-        pred_roi = pred_roi > 0
+
+def process_probability_map(pred_roi):
+    mean1 = 0
+    mean2 = 0
+    count1 = 0
+    count2 = 0
+    count3 = 0
+
+    for it in np.nditer(pred_roi, op_flags=['readwrite']):
+        if it > .5:
+            count1 += 1
+            mean1 += it
+        elif it > 0 and it < .5:
+            count2 += 1
+            mean2 += it
+        else:
+            count3 += 1
+
+    print('target 1: {} {}'.format(count1, mean1))
+    print('target 2: {} {}'.format(count2, mean2))
+    print('target 3: {}'.format(count3))
 
     return pred_roi
 
 
-def predict_3d(pred_model, img, roi, input_shape):
+def predict_3d(pred_model, img, roi, input_shape, pipeline):
     img_cut, roi_cut, dx, dy = cut_window(input_shape, img, roi)
 
     input_img_cut = zero_pad(img_cut, shape=input_shape)
 
+    print('input img cut: {}, {}'.format(np.sum(input_img_cut), input_img_cut.shape))
+
     input_multi_dim = np.reshape(input_img_cut, (1,) + (1,) + input_img_cut.shape)
 
+    print('input multi dim: {}, {}'.format(np.sum(input_img_cut), input_img_cut.shape))
+
     output_multi_dim = pred_model.predict(input_multi_dim)
+
+    print('ouput multi dim: {}, {}'.format(np.sum(input_img_cut), output_multi_dim.shape))
 
     output_pred_roi_cut = np.squeeze(output_multi_dim)
 
     # pred_roi_cut = output_pred_roi_cut[:, :, 4:44]
     # output is now (48,48,40) -> no need to cut z-axis
 
+    print('output pred roi cut: {}, {}'.format(np.sum(output_pred_roi_cut), output_pred_roi_cut.shape))
+
     processed_roi_cut = process_probability_map(output_pred_roi_cut)
 
-    return resize_roi(processed_roi_cut, dx, dy, img.shape)
+    print('processed roi cut: {}, {}'.format(np.sum(processed_roi_cut), processed_roi_cut.shape))
 
+    resized_pred_roi = resize_roi(processed_roi_cut, dx, dy, img.shape)
+
+    print('resized pred roi: {}, {}'.format(np.sum(resized_pred_roi), resized_pred_roi.shape))
+
+    if pipeline:
+        return input_img_cut, output_pred_roi_cut, processed_roi_cut, resized_pred_roi
+
+    return resized_pred_roi
 
 def predict_2d(pred_model, img, roi, input_shape):
     pred_roi_cut = np.ndarray(input_shape + (40,))
