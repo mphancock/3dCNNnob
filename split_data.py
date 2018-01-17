@@ -51,6 +51,15 @@ def process_file(file, mat_path, data_path):
             return
 
     name = file[9:14]
+
+    hit = False
+
+    # python 2.7 syntax: range(x,y)
+    # python 3.5 syntax: list(range(x,y))
+    if file[14] in [str(n) for n in range(0,10)]:
+        name = file[9:16]
+        hit = True
+
     shape = (256, 256, 40)
 
     if image.shape[0] < shape[0]:
@@ -60,7 +69,7 @@ def process_file(file, mat_path, data_path):
     if image.shape == shape and roi.shape == shape:
         np.save(os.path.join(data_path, 'image', name), normalize_image(image))
         np.save(os.path.join(data_path, 'roi', name), normalize_image(roi))
-        print('ndarray saved -- name: {}\tshape: {}\tpath: {}'.format(name, image.shape, data_path))
+        print('ndarray saved -- name: {}\tshape: {}\tpath: {}\thit: {}'.format(name, image.shape, data_path, hit))
     else:
         print('{} invalid dimensions:\nimage dimension:{}\nroi dimension:{}'.format(name, image.shape, roi.shape))
 

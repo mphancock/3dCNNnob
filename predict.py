@@ -129,11 +129,17 @@ def predict(data_type, trial_path, net_path, pred_model, input_shape):
 
     for i in test_data_list:
         name = i[0:5]
+
+        # python 2.7 syntax: range(x,y)
+        # python 3.5 syntax: list(range(x,y))
+        if i[5] in [str(n) for n in range(0,10)]:
+            name = i[0:7]
+
         img = np.load(os.path.join(test_data_path, 'image', i))
         roi = np.load(os.path.join(test_data_path, 'roi', i))
 
         if data_type == '3d':
-            roi_pred = predict_3d(pred_model, img, roi, input_shape)
+            roi_pred = predict_3d(pred_model, img, roi, input_shape, pipeline=False)
         elif data_type == '2d':
             roi_pred = predict_2d(pred_model, img, roi, input_shape)
         else:

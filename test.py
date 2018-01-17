@@ -213,10 +213,92 @@ def preview_test():
     save_3d(pred, prev_dir, '10040')
 
 
+def merge_folders():
+    base_dir = '/Users/Matthew/Documents/Research/'
+    dir1 = os.path.join(base_dir, 'biasFieldCorrData')
+    dir2 = os.path.join(base_dir, 'corrMTRdata')
+
+    files1 = os.listdir(dir1)
+    files2 = os.listdir(dir2)
+
+    files1.remove('.DS_Store')
+    files2.remove('.DS_Store')
+
+    overlap = set(files1).intersection(files2)
+    overlap = list(overlap)
+
+    xor = set(files1).symmetric_difference(files2)
+    xor2 = xor.intersection(set(files2))
+
+    xor2 = list(xor2)
+
+    for i in xor2:
+        print(i)
+
+    print('merge complete')
+
+
+def process_prob_map_test():
+    base_path = '/Users/Matthew/Documents/Research/trial/trial1/cnnbn/pred'
+    file_num = '2285500.npy'
+
+    file_path = os.path.join(base_path, file_num)
+
+    pred = np.load(file_path)
+
+    countGT = 0
+    countLT = 0
+
+    meanGT = 0
+    meanLT = 0
+
+    atomicCount = 0
+
+    for ii in np.nditer(pred):
+        if ii != 1 and ii != 0:
+            if ii >= .5:
+                countGT += 1
+                meanGT += ii
+            else:
+                countLT += 1
+                meanLT += ii
+        else:
+            atomicCount += 1
+
+    meanGT = meanGT / countGT
+    meanLT = meanLT / countLT
+
+    print('atomic count: {}'.format(atomicCount))
+
+    print('non atomic countGT: {}'.format(countGT))
+    print('non atomic countLT: {}'.format(countLT))
+
+    print('non atomic meanGT: {}'.format(meanGT))
+    print('non atomic meanLT: {}'.format(meanLT))
+
+    for ii in np.nditer(pred, op_flags=['readwrite']):
+        if ii >= .5:
+            ii[...] = 1
+        else:
+            ii[...] = 0
+
+    atomicCount = 0
+    fail = 0
+
+    for ii in np.nditer(pred):
+        if ii == 1:
+            atomicCount += 1
+        elif ii == 0:
+            atomicCount += 1
+        else:
+            fail += 1
+
+    print('atomic count: {}'.format(atomicCount))
+    print('fail: {}'.format(fail))
 
 
 if __name__ == '__main__':
-    preview_test()
+    process_prob_map_test()
     print('testing finished')
 
 

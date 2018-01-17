@@ -9,13 +9,13 @@ from utilities import clear_dir
 def set_params():
     shared = {}
     shared['base'] = '/scratch/hancocmp/'
-    shared['mat_dir'] = 'corrMTRdata'
+    shared['mat_dir'] = 'biasFieldCorrData'
     shared['trial'] = 1
     shared['image_shape'] = (256,256,40)
     shared['input_shape'] = (48,48,40)
     shared['init_lr'] = .00001
     shared['batch_size'] = 5
-    shared['epoch_count'] = 5000
+    shared['epoch_count'] = 7500
 
     return shared
 
@@ -29,7 +29,7 @@ def run_trial(shared):
     for k, v in shared.items():
         print(k, v)
 
-    base_path = os.path.join(shared['base'], 'trial{}'.format(shared['trial']))
+    base_path = os.path.join(shared['base'], 'trial', 'trial{}'.format(shared['trial']))
     check_path(base_path)
     clear_dir(base_path)
 
