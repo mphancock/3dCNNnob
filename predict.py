@@ -146,7 +146,7 @@ def predict(data_type, trial_path, net_path, pred_model, input_shape):
             raise RuntimeError('Invalid data type passed to predict')
 
         np.save(os.path.join(net_path, 'pred', name), roi_pred)
-        print('{} roi prediction copmlete'.format(name))
+        print('{} roi prediction complete'.format(name))
 
 
 

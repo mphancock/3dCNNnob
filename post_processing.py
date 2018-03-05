@@ -124,7 +124,7 @@ def analyze_dc(dc, file_num, dc_dict):
 
     dc_dict[file_num] = dc
 
-    if dc > .5:
+    if dc > .6:
         dc_dict['successful_ave_dc'] += dc
     else:
         dc_dict['num_fail'] += 1
@@ -264,7 +264,7 @@ if __name__ == '__main__':
     # if(os.path.isdir(os.path.join(base_path, 'trial'))):
     #     clear_dir(os.path.join(base_path, 'trial'))
     #
-    # save_from_cloud(base_path, 1)
+    save_from_cloud(base_path, 1)
 
     # for i in range(1,4):
     for i in range(1,2):
