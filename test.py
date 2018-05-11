@@ -297,8 +297,39 @@ def process_prob_map_test():
     print('fail: {}'.format(fail))
 
 
+def roi_pixel_test():
+    dir_path = '/Users/Matthew/Documents/Research/biasFieldCorrData/'
+    file_path = os.path.join(dir_path, 'corrDATA_2146490.mat')
+
+    mat_dict = sio.loadmat(file_path)
+    ROI = mat_dict['nerveROI']
+    ROI_slice = ROI[:, :, 0]
+
+    zero_pix = 0
+    one_pix = 0
+    inval_pix = 0
+
+    for i in np.nditer(ROI_slice):
+        if i == 0:
+            zero_pix += 1
+        elif i == 0:
+            one_pix += 1
+        else:
+            inval_pix += 1
+
+    print('zero pix: ', zero_pix)
+    print('one pix: ', one_pix)
+    print('inval pix: ', inval_pix)
+    print('ROI ave: ', np.sum(ROI)/ROI.shape[2])
+
+    norm_ROI = normalize_image(ROI_slice)
+    print('\nnormalize ROI\n')
+
+    print('ROI ave: ', np.sum(norm_ROI))
+
+
 if __name__ == '__main__':
-    process_prob_map_test()
+    roi_pixel_test()
     print('testing finished')
 
 

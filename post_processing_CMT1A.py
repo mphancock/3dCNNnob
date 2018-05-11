@@ -33,8 +33,6 @@ def save_from_cloud(base_path, trial_num):
 
     print('Saving cloud data from {} to {}'.format(cloud_dir, local_dir))
 
-    clear_dir(local_dir)
-
     call(['scp', '-r', cloud_dir, local_dir])
     call(['scp', '-r', os.path.join(CMT_cloud_dir, '3dData'), local_dir])
 
@@ -77,9 +75,9 @@ def gen_predictions(mat_path, results_path, trial_path):
                                          dc_dict=dc_dict)
 
         if dc_dict[file_num] >= .6:
-            pred_dict[file_num] = nerve_size(pred_roi)
-
-    print(pred_dict)
+            # pred_dict[file_num] = get_pred_nerve_size(pred_roi)
+            pred_roi = normalize_image(pred_roi)
+            pred_dict[file_num] = np.sum(pred_roi) / pred_roi.shape[2]
 
     return dc_dict, pred_dict
 
@@ -119,10 +117,29 @@ def get_nerve_size(file_num, mat_dir):
         if '{}.mat'.format(file_num) in mat_file:
             mat_dict = loadmat(os.path.join(mat_dir, mat_file))
             roi = mat_dict['nerveROI']
-            nerve_area = np.sum(roi[:,:,20])
-            return nerve_area
+            avg_nerve_area = 0
+
+            # for i in range(roi.shape[2]):
+            #     avg_nerve_area = avg_nerve_area + np.sum(roi[:, :, i])
+            #
+            # avg_nerve_area = avg_nerve_area / roi.shape[2]
+
+            roi = normalize_image(roi)
+            avg_CSA = np.sum(roi) / roi.shape[2]
+
+            return avg_CSA
 
     print('{} associated .mat file was not found'.format(file_num))
+
+
+# def get_pred_nerve_size(pred_roi):
+#     avg_nerve_area = 0
+#     for i in range(pred_roi.shape[2]):
+#         avg_nerve_area = avg_nerve_area + np.sum(pred_roi[:, :, i])
+#
+#     avg_nerve_area = avg_nerve_area / pred_roi.shape[2]
+#
+#     return avg_nerve_area
 
 
 def CMT1A_graphing(pred_dict, mat_dir):
@@ -148,7 +165,7 @@ def CMT1A_graphing(pred_dict, mat_dir):
     CMTES[2146490]=18
     CMTES[2161250]=17
 
-    for file_num in pred_dict.keys():
+    for file_num in pred_dict.copy():
         file_num = int(file_num)
 
         if CMTES[file_num] != 'NA':
@@ -156,56 +173,60 @@ def CMT1A_graphing(pred_dict, mat_dir):
         else:
             del pred_dict['{}'.format(file_num)]
 
+    file_list = []
     pred_nerve_size_list = []
     nerve_size_list = []
     CMTES_list = []
 
-    print('pred dict check 2')
-    print(pred_dict)
-
-    for file_num in pred_dict.keys():
+    # python 3
+    for file_num in pred_dict.copy():
         nerve_size_list.append(get_nerve_size(file_num=file_num,
                                               mat_dir=mat_dir))
         pred_nerve_size_list.append((pred_dict[file_num])[0])
         CMTES_list.append(pred_dict[file_num][1])
-
-    print(len(pred_nerve_size_list))
-    print(len(nerve_size_list))
-    print(len(CMTES_list))
-
-    print(pred_nerve_size_list)
-    print(nerve_size_list)
-    print(CMTES_list)
-
-    print(type(pred_nerve_size_list[0]))
+        file_list.append(file_num)
 
     nerve_lists = [pred_nerve_size_list, nerve_size_list]
 
+    for i in range(len(file_list)):
+        print('File: ', file_list[i])
+        print('\tCMTES: ', CMTES_list[i])
+        print('\tHand CSA: ', nerve_size_list[i])
+        print('\tCNN CSA: ', pred_nerve_size_list[i], '\n')
+
     for list in nerve_lists:
-        slope, intercept, r_value, p_value, std_err = stats.linregress(list, CMTES_list)
+        slope, intercept, r_value, p_value, std_err = stats.linregress(CMTES_list, list)
 
         print('slope:\t{}'.format(slope))
+        print('intercept:\t', intercept)
         print('beta:\t{}'.format(r_value))
         print('std_error:\t{}'.format(std_err))
 
-        plt.plot(list, CMTES_list, 'o', label='original data')
-        #plt.plot(list, intercept + slope * list, 'r', label='fitted line')
+        best_fit = [intercept + slope * i for i in CMTES_list]
+        print('Best Fit: ', best_fit)
+
+        plt.plot(CMTES_list, list, 'o', label='original data')
+        plt.plot(CMTES_list, best_fit, 'r--', label='fitted line')
+        plt.ylabel('Cross Sectional Area')
+        plt.xlabel('CMTES')
         plt.legend()
         plt.show()
+
+        print('\n')
 
 
 if __name__ == '__main__':
     base_path = '/Users/Matthew/Documents/Research/'
 
-    # if(os.path.isdir(os.path.join(base_path, 'trial'))):
-    #     clear_dir(os.path.join(base_path, 'trial'))
+    # if(os.path.isdir(os.path.join(base_path, 'CMT1AResults'))):
+    #     clear_dir(os.path.join(base_path, 'CMT1AResults'))
     #
-
-    # save_from_cloud(base_path, 1)
+    #
+    # save_from_cloud(base_path, 'all')
 
 
     # for i in range(1,4):
-    for i in range(1,2):
+    for i in range(8,9):
         trial = i
         gen_trial_predictions(results_path=os.path.join(base_path, 'CMT1AResults'),
                               mat_dir=os.path.join(base_path, 'biasFieldCorrData'),
